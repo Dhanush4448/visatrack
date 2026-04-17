@@ -1,0 +1,18 @@
+services:
+  db:
+    image: ankane/pgvector
+    environment:
+      POSTGRES_DB: visatrack
+      POSTGRES_USER: visatrack
+      POSTGRES_PASSWORD: visatrack123
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U visatrack"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  pgdata:
