@@ -22,3 +22,5 @@ async def root():
     return {"status": "VisaTrack API running", "version": "0.1.0"}
 
 app.include_router(search.router)
+from routers import match
+app.include_router(match.router)
