@@ -1,10 +1,10 @@
 import pandas as pd
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from sqlalchemy import text
 from db import engine
 import sys
 
-MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+MODEL = TextEmbedding("BAAI/bge-small-en-v1.5")
 
 def normalize_wage(row):
     """Convert any wage unit to annual salary."""
@@ -74,13 +74,7 @@ def run_pipeline(filepath: str, fiscal_year: int):
     # Embed all records
     texts = df["embed_text"].tolist()
     print(f"\n  Embedding {len(texts):,} records...")
-    embeddings = MODEL.encode(
-        texts,
-        batch_size=256,
-        show_progress_bar=True,
-        convert_to_numpy=True
-    )
-
+    embeddings = list(MODEL.embed(texts))
     # Insert to pgvector in chunks of 500
     print("\n  Inserting to database...")
     inserted = 0
