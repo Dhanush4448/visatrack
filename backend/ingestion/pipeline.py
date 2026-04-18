@@ -101,7 +101,7 @@ def run_pipeline(filepath: str, fiscal_year: int):
                         VALUES
                             (:employer, :soc_code, :soc_title,
                              :wage, :city, :state,
-                             :status, :begin_date, :fy, :emb::vector)
+                             :status, :begin_date, :fy, CAST(:emb AS vector))
                     """), {
                         "employer":  str(row.get("EMPLOYER_NAME", ""))[:255],
                         "soc_code":  str(row.get("SOC_CODE",      ""))[:20],
