@@ -24,3 +24,5 @@ async def root():
 app.include_router(search.router)
 from routers import match
 app.include_router(match.router)
+from routers import groq_insights
+app.include_router(groq_insights.router)

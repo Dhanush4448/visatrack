@@ -16,8 +16,28 @@ interface Result {
 }
 
 function ResultCard({ r }: { r: Result }) {
-  const tier =
-    r.filings >= 50 ? "Platinum" : r.filings >= 10 ? "Gold" : "Sponsor";
+  const [insight, setInsight] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const tier = r.filings >= 50 ? "Platinum" : r.filings >= 10 ? "Gold" : "Sponsor";
+
+  async function fetchInsight() {
+    if (insight) { setInsight(null); return; }
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/insight`, {
+        employer: r.employer,
+        role: r.role,
+        city: r.city,
+        state: r.state,
+        avg_wage: r.avg_wage,
+        filings: r.filings,
+      });
+      setInsight(res.data.insight);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition">
       <div className="flex justify-between items-start">
@@ -31,15 +51,28 @@ function ResultCard({ r }: { r: Result }) {
           {Math.round(r.match_score * 100)}% match
         </span>
       </div>
-      <div className="mt-2 flex gap-4 text-sm text-gray-600">
-        <span>{r.avg_wage ? "$" + r.avg_wage.toLocaleString() : "N/A"}</span>
-        <span>{tier} · {r.filings} filing{r.filings !== 1 ? "s" : ""}</span>
-        <span>FY{r.latest_year}</span>
+      <div className="mt-2 flex justify-between items-center">
+        <div className="flex gap-4 text-sm text-gray-600">
+          <span>{r.avg_wage ? "$" + r.avg_wage.toLocaleString() : "N/A"}</span>
+          <span>{tier} · {r.filings} filing{r.filings !== 1 ? "s" : ""}</span>
+          <span>FY{r.latest_year}</span>
+        </div>
+        <button
+          onClick={fetchInsight}
+          disabled={loading}
+          className="text-xs px-3 py-1 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50"
+        >
+          {loading ? "..." : insight ? "Hide" : "AI Insight"}
+        </button>
       </div>
+      {insight && (
+        <div className="mt-3 p-3 bg-purple-50 rounded-lg text-sm text-purple-900">
+          {insight}
+        </div>
+      )}
     </div>
   );
 }
-
 export default function Home() {
   const [tab, setTab] = useState<"search" | "match">("search");
 
