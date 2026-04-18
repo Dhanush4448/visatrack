@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from pydantic import BaseModel
 from db import get_db
 from functools import lru_cache
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api")
 @lru_cache(maxsize=1)
 def get_model():
     print("Loading embedding model...")
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = TextEmbedding("BAAI/bge-small-en-v1.5")
     print("Model loaded.")
     return model
 
@@ -24,7 +24,7 @@ class SearchRequest(BaseModel):
 @router.post("/search")
 async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
     model = get_model()
-    query_vec = str(model.encode([req.query])[0].tolist())
+    query_vec = str(list(model.embed([req.query]))[0].tolist())
     params = {"vec": query_vec, "limit": req.limit}
     state_filter = ""
     wage_filter = ""

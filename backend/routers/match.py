@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from db import get_db
 from routers.search import get_model
 import pdfplumber
@@ -43,11 +43,10 @@ async def match_resume(
     if not resume_text:
         raise HTTPException(status_code=400, detail="Could not extract text from file")
 
-    # Truncate to first 2000 chars — enough context, avoids token limits
     resume_text = resume_text[:2000]
 
     model = get_model()
-    resume_vec = str(model.encode([resume_text])[0].tolist())
+    resume_vec = str(list(model.embed([resume_text]))[0].tolist())
 
     rows = db.execute(text("""
         SELECT
