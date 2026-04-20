@@ -1,19 +1,29 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from fastembed import TextEmbedding
 from pydantic import BaseModel
 from db import get_db
 from functools import lru_cache
+from dotenv import load_dotenv
+import httpx
+import os
+
+load_dotenv()
 
 router = APIRouter(prefix="/api")
 
-@lru_cache(maxsize=1)
-def get_model():
-    print("Loading embedding model...")
-    model = TextEmbedding("BAAI/bge-small-en-v1.5")
-    print("Model loaded.")
-    return model
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_MODEL = "BAAI/bge-small-en-v1.5"
+HF_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
+
+def get_embedding(text: str) -> list:
+    response = httpx.post(
+        HF_URL,
+        headers={"Authorization": f"Bearer {HF_TOKEN}"},
+        json={"inputs": text},
+        timeout=30,
+    )
+    return response.json()
 
 class SearchRequest(BaseModel):
     query: str
@@ -23,8 +33,7 @@ class SearchRequest(BaseModel):
 
 @router.post("/search")
 async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
-    model = get_model()
-    query_vec = str(list(model.embed([req.query]))[0].tolist())
+    query_vec = str(get_embedding(req.query))
     params = {"vec": query_vec, "limit": req.limit}
     state_filter = ""
     wage_filter = ""

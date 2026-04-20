@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from fastembed import TextEmbedding
 from db import get_db
-from routers.search import get_model
+from routers.search import get_embedding
 import pdfplumber
 import docx2txt
 import tempfile
@@ -45,8 +45,7 @@ async def match_resume(
 
     resume_text = resume_text[:2000]
 
-    model = get_model()
-    resume_vec = str(list(model.embed([resume_text]))[0].tolist())
+    resume_vec = str(get_embedding(resume_text))
 
     rows = db.execute(text("""
         SELECT
