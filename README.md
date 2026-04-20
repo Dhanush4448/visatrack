@@ -4,6 +4,10 @@
 
 > AI-powered semantic search over 106,000+ real US Department of Labor H1B filings
 
+## Live Demo
+**Frontend:** https://visatrack.vercel.app  
+*Note: Backend deployment in progress. Run locally for full functionality.*
+
 
 
 \## What it does
