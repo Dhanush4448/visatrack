@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from fastembed import TextEmbedding
 from db import get_db
 from routers.search import get_embedding
 import pdfplumber
