@@ -2,7 +2,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-const API = "http://localhost:8000/api";
+const API = "https://visatrack-backend.onrender.com/api";
 
 interface Result {
   employer: string;
