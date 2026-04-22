@@ -1,368 +1,154 @@
-\# VisaTrack — H1B Intelligence Platform
-
-
+# VisaTrack — H1B Intelligence Platform
 
 > AI-powered semantic search over 106,000+ real US Department of Labor H1B filings
 
 ## Live Demo
+
 **Frontend:** https://visatrack.vercel.app  
-*Note: Backend deployment in progress. Run locally for full functionality.*
+**Backend API:** https://visatrack-backend.onrender.com/api/health
 
-
-
-\## What it does
-
-
+## What it does
 
 International students and workers applying for H1B sponsorship waste months applying to companies that never sponsor. VisaTrack solves this by making DOL public LCA data searchable with AI.
 
+- **Semantic search** — search "machine learning engineer Bay Area" and get real companies with real salaries, not keyword matches
+- **Resume matching** — upload your PDF resume and get ranked H1B sponsors that match your skills
+- **AI insights** — click any result for a Groq-powered analysis of the employer's sponsorship history
+- **JWT Auth** — signup and login to save searches and track applications
 
-
-\- \*\*Semantic search\*\* — search "machine learning engineer Bay Area" and get real companies with real salaries, not keyword matches
-
-\- \*\*Resume matching\*\* — upload your PDF resume and get ranked H1B sponsors that match your skills  
-
-\- \*\*AI insights\*\* — click any result for a Groq-powered analysis of the employer's sponsorship history
-
-
-
-\## Architecture
-
-Next.js 14 (TypeScript)
-
+## Architecture
+Next.js 14 (TypeScript) — Vercel
 ↓ REST API
-
-FastAPI (Python)
-
+FastAPI (Python) — Render
 ↓ pgvector cosine similarity
-
-PostgreSQL + pgvector
-
-106,613 LCA records
-
+PostgreSQL + pgvector — Render
+106,326 LCA records
 384-dim HNSW index
-
 ↓ embeddings
-
-fastembed (BAAI/bge-small-en-v1.5)
-
+HuggingFace Inference API (BAAI/bge-small-en-v1.5)
 ↓ LLM insights
-
 Groq API (llama-3.1-8b-instant)
 
-
-
-\## Tech Stack
-
-
+## Tech Stack
 
 | Layer | Technology |
-
 |-------|-----------|
-
 | Frontend | Next.js 14, TypeScript, Tailwind CSS |
-
 | Backend | FastAPI, Python |
-
-| Database | PostgreSQL + pgvector |
-
-| Embeddings | fastembed (BAAI/bge-small-en-v1.5) |
-
+| Database | PostgreSQL + pgvector (Render) |
+| Embeddings | HuggingFace Inference API (BAAI/bge-small-en-v1.5) |
 | LLM | Groq API (llama-3.1-8b-instant) |
+| Auth | JWT + bcrypt + passlib |
+| Deployment | Vercel (frontend) + Render (backend + DB) |
 
-| Containerization | Docker |
+## Key Technical Decisions
 
+**Why pgvector over Pinecone/Weaviate?** Full control over the data, no vendor lock-in, and cosine similarity via HNSW index gives sub-100ms queries at 106K records.
 
+**Why semantic search over keyword search?** Competitors (MyVisaJobs, H1BGrader) use keyword matching. A query for "ML engineer" misses records titled "Machine Learning Scientist". Vector embeddings capture meaning, not keywords.
 
-\## Key Technical Decisions
+**Why Groq over OpenAI?** 750 tokens/second inference — insights load in under 1 second. OpenAI at equivalent speed would cost money.
 
+**Why HuggingFace Inference API for embeddings?** No heavy ML dependencies (torch, sentence-transformers) needed on the server — pure HTTP calls, works within Render's free tier memory limits.
 
+## Data
 
-\*\*Why pgvector over Pinecone/Weaviate?\*\* Full control over the data, no vendor lock-in, and cosine similarity via HNSW index gives sub-100ms queries at 106K records.
+- Source: US Department of Labor FY2025 Q4 LCA Disclosure Data (public)
+- 118,580 total filings → 106,326 certified H1B petitions inserted
+- Fields: employer, role, SOC code, wage, location, filing date
 
+## Running Locally
 
+### Prerequisites
+- Docker Desktop
+- Python 3.11+
+- Node.js 18+
 
-\*\*Why semantic search over keyword search?\*\* Competitors (MyVisaJobs, H1BGrader) use keyword matching. A query for "ML engineer" misses records titled "Machine Learning Scientist". Vector embeddings capture meaning, not keywords.
-
-
-
-\*\*Why Groq over OpenAI?\*\* 750 tokens/second inference — insights load in under 1 second. OpenAI at equivalent speed would cost money.
-
-
-
-\## Data
-
-
-
-\- Source: US Department of Labor FY2025 Q4 LCA Disclosure Data (public)
-
-\- 118,580 total filings → 106,613 certified H1B petitions
-
-\- Fields: employer, role, SOC code, wage, location, filing date
-
-
-
-\## Running Locally
-
-
-
-\### Prerequisites
-
-\- Docker Desktop
-
-\- Python 3.11+
-
-\- Node.js 18+
-
-
-
-\### Backend
-
-
+### Backend
 
 ```bash
-
 cd backend
-
-
-
-\# Create virtual environment
-
 python -m venv venv
-
-venv\\Scripts\\activate  # Windows
-
-source venv/bin/activate  # Mac/Linux
-
-
-
-\# Install dependencies
-
+venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 
-
-
-\# Start PostgreSQL with pgvector
-
+# Start PostgreSQL with pgvector
 docker-compose up -d
 
+# Initialize database
+python -c "from db import init_db; init_db()"
 
+# Download LCA data from DOL:
+# https://www.dol.gov/agencies/eta/foreign-labor/performance
+# Place xlsx file in the data/ folder, then run:
+python ingestion/pipeline.py data/LCA_Disclosure_Data_FY2025_Q4.xlsx 2025
 
-\# Initialize database
+# Create .env file
+DATABASE_URL=postgresql://visatrack:visatrack123@localhost:5433/visatrack
+GROQ_API_KEY=your_groq_key_here
+HF_TOKEN=your_hf_token_here
+JWT_SECRET=your_secret_here
 
-python -c "from db import init\_db; init\_db()"
-
-
-
-\# Download LCA data from DOL:
-
-\# https://www.dol.gov/agencies/eta/foreign-labor/performance
-
-\# Place xlsx file in the data/ folder, then run:
-
-python ingestion/pipeline.py data/LCA\_Disclosure\_Data\_FY2025\_Q4.xlsx 2025
-
-
-
-\# Create .env file
-
-cp .env.example .env
-
-\# Add your GROQ\_API\_KEY to .env
-
-
-
-\# Start API server
-
+# Start API
 uvicorn main:app --reload --port 8000
-
 ```
 
-
-
-\### Frontend
-
-
+### Frontend
 
 ```bash
-
 cd frontend
-
 npm install
-
 npm run dev
-
 ```
-
-
 
 Open http://localhost:3000
 
-
-
-\### Environment Variables
-
-
-
-Create `backend/.env`:
-
-DATABASE\_URL=postgresql://visatrack:visatrack123@localhost:5433/visatrack
-
-GROQ\_API\_KEY=your\_groq\_key\_here
-
-JWT\_SECRET=your\_secret\_here
-
-
-
-\## API Endpoints
-
-
+## API Endpoints
 
 | Method | Endpoint | Description |
-
 |--------|----------|-------------|
-
 | POST | `/api/search` | Semantic search over H1B records |
-
 | POST | `/api/match` | Match resume PDF to H1B sponsors |
-
 | POST | `/api/insight` | AI analysis of employer sponsorship |
-
+| POST | `/api/auth/signup` | Create new account |
+| POST | `/api/auth/login` | Login and get JWT token |
 | GET | `/api/health` | Health check |
 
-
-
-\### Example: Search Request
-
-
-
-```json
-
-POST /api/search
-
-{
-
-&#x20; "query": "machine learning engineer",
-
-&#x20; "state": "CA",
-
-&#x20; "limit": 20
-
-}
-
-```
-
-
-
-\### Example: Search Response
-
-
-
-```json
-
-{
-
-&#x20; "query": "machine learning engineer",
-
-&#x20; "total": 20,
-
-&#x20; "results": \[
-
-&#x20;   {
-
-&#x20;     "employer": "Google LLC",
-
-&#x20;     "role": "Software Developers",
-
-&#x20;     "city": "Mountain View",
-
-&#x20;     "state": "CA",
-
-&#x20;     "filings": 142,
-
-&#x20;     "avg\_wage": 198000,
-
-&#x20;     "latest\_year": 2025,
-
-&#x20;     "match\_score": 0.71
-
-&#x20;   }
-
-&#x20; ]
-
-}
-
-```
-
-
-
-\## Project Structure
-
+## Project Structure
 visatrack/
-
 ├── backend/
-
 │   ├── main.py              # FastAPI app entry point
-
 │   ├── db.py                # Database connection and schema
-
 │   ├── requirements.txt
-
 │   ├── docker-compose.yml
-
 │   ├── ingestion/
-
 │   │   └── pipeline.py      # DOL data ingestion + embedding
-
 │   └── routers/
-
 │       ├── search.py        # Semantic search endpoint
-
 │       ├── match.py         # Resume match endpoint
-
-│       └── groq\_insights.py # AI employer insights
-
+│       ├── groq_insights.py # AI employer insights
+│       └── auth.py          # JWT authentication
 └── frontend/
-
 └── src/
-
 ├── app/
-
 │   └── page.tsx     # Main UI with search + match tabs
-
 └── lib/
-
 └── api.ts       # API client
 
-
-
-\## Competitive Landscape
-
-
+## Competitive Landscape
 
 | Feature | VisaTrack | MyVisaJobs | H1BGrader |
-
 |---------|-----------|------------|-----------|
-
 | Semantic Search | ✅ | ❌ | ❌ |
-
 | Resume Matching | ✅ | ❌ | ❌ |
-
 | AI Insights | ✅ | ❌ | ❌ |
-
+| JWT Auth | ✅ | ✅ | ✅ |
 | Real DOL Data | ✅ | ✅ | ✅ |
-
 | Free to Use | ✅ | ✅ | ✅ |
+| Live Deployment | ✅ | ✅ | ✅ |
 
+## Author
 
-
-\## Author
-
-
-
-\*\*Dhanush Neelakantan\*\*  
-
+**Dhanush Neelakantan**  
 MS Computer Science, George Mason University (May 2026)  
-
-\[LinkedIn](https://www.linkedin.com/in/dhanush-neelakantan-15b4481bb/) | \[GitHub](https://github.com/Dhanush4448)
-
+[LinkedIn](https://linkedin.com/in/dhanush-neelakantan) | [GitHub](https://github.com/Dhanush4448) | [VisaTrack](https://visatrack.vercel.app)
