@@ -76,46 +76,52 @@ def run_pipeline(filepath: str, fiscal_year: int):
     print(f"\n  Embedding {len(texts):,} records...")
     embeddings = list(MODEL.embed(texts))
     # Insert to pgvector in chunks of 500
+    # Insert to pgvector in chunks of 100, reconnecting each batch
     print("\n  Inserting to database...")
     inserted = 0
     skipped  = 0
 
-    with engine.connect() as conn:
-        for i in range(0, len(df), 500):
-            batch_df  = df.iloc[i:i+500]
-            batch_emb = embeddings[i:i+500]
+    for i in range(0, len(df), 100):
+        batch_df  = df.iloc[i:i+100]
+        batch_emb = embeddings[i:i+100]
 
-            for (_, row), emb in zip(batch_df.iterrows(), batch_emb):
-                try:
-                    conn.execute(text("""
-                        INSERT INTO lca_records
-                            (employer_name, soc_code, soc_title,
-                             wage_rate, worksite_city, worksite_state,
-                             case_status, begin_date, fiscal_year, embedding)
-                        VALUES
-                            (:employer, :soc_code, :soc_title,
-                             :wage, :city, :state,
-                             :status, :begin_date, :fy, CAST(:emb AS vector))
-                    """), {
-                        "employer":  str(row.get("EMPLOYER_NAME", ""))[:255],
-                        "soc_code":  str(row.get("SOC_CODE",      ""))[:20],
-                        "soc_title": str(row.get("SOC_TITLE",     ""))[:255],
-                        "wage":      row["wage_annual"],
-                        "city":      str(row.get("WORKSITE_CITY",  ""))[:100],
-                        "state":     str(row.get("WORKSITE_STATE", ""))[:2],
-                        "status":    str(row.get("CASE_STATUS",   ""))[:50],
-                        "begin_date":row.get("BEGIN_DATE"),
-                        "fy":        fiscal_year,
-                        "emb":       str(emb.tolist()),
-                    })
-                    inserted += 1
-                except Exception:
-                    skipped += 1
-                    continue
+        try:
+            with engine.connect() as conn:
+                for (_, row), emb in zip(batch_df.iterrows(), batch_emb):
+                    try:
+                        conn.execute(text("""
+                            INSERT INTO lca_records
+                                (employer_name, soc_code, soc_title,
+                                 wage_rate, worksite_city, worksite_state,
+                                 case_status, begin_date, fiscal_year, embedding)
+                            VALUES
+                                (:employer, :soc_code, :soc_title,
+                                 :wage, :city, :state,
+                                 :status, :begin_date, :fy, CAST(:emb AS vector))
+                        """), {
+                            "employer":  str(row.get("EMPLOYER_NAME", ""))[:255],
+                            "soc_code":  str(row.get("SOC_CODE",      ""))[:20],
+                            "soc_title": str(row.get("SOC_TITLE",     ""))[:255],
+                            "wage":      row["wage_annual"],
+                            "city":      str(row.get("WORKSITE_CITY",  ""))[:100],
+                            "state":     str(row.get("WORKSITE_STATE", ""))[:2],
+                            "status":    str(row.get("CASE_STATUS",   ""))[:50],
+                            "begin_date":row.get("BEGIN_DATE"),
+                            "fy":        fiscal_year,
+                            "emb":       str(emb.tolist()),
+                        })
+                        inserted += 1
+                    except Exception:
+                        skipped += 1
+                        continue
+                conn.commit()
+        except Exception as e:
+            print(f"    Batch error at {i}: {e}")
+            skipped += 100
+            continue
 
-            conn.commit()
-            pct = round((i + 500) / len(df) * 100)
-            print(f"    [{pct:>3}%] {min(i+500, len(df)):,} / {len(df):,} records")
+        pct = round((i + 100) / len(df) * 100)
+        print(f"    [{pct:>3}%] {min(i+100, len(df)):,} / {len(df):,} records")
 
     print(f"\nDone. Inserted: {inserted:,}  Skipped: {skipped:,}")
 
