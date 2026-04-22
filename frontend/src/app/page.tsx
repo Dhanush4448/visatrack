@@ -468,7 +468,7 @@ export default function Home() {
               US Department of Labor LCA Disclosures
             </a>
             {" "}· FY2025 Q4 · Built by{" "}
-            <a href="https://linkedin.com/in/dhanush-neelakantan" target="_blank" rel="noopener noreferrer"
+            <a href="https://www.linkedin.com/in/dhanush-neelakantan-15b4481bb/" target="_blank" rel="noopener noreferrer"
               style={{ color: "#6366F1", textDecoration: "none" }}>
               Dhanush Neelakantan
             </a>
