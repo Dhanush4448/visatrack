@@ -151,4 +151,4 @@ visatrack/
 
 **Dhanush Neelakantan**  
 MS Computer Science, George Mason University (May 2026)  
-[LinkedIn](https://linkedin.com/in/dhanush-neelakantan) | [GitHub](https://github.com/Dhanush4448) | [VisaTrack](https://visatrack.vercel.app)
+[LinkedIn](https://www.linkedin.com/in/dhanush-neelakantan-15b4481bb/) | [GitHub](https://github.com/Dhanush4448) | [VisaTrack](https://visatrack.vercel.app)
