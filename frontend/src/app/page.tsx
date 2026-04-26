@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useState } from "react";
 import axios from "axios";
+import posthog from "posthog-js";
 
 const API = "https://visatrack-backend.onrender.com/api";
 
@@ -64,6 +65,7 @@ function ResultCard({ r }: { r: Result }) {
   async function fetchInsight() {
     if (insight) { setExpanded(!expanded); return; }
     setLoading(true);
+    posthog.capture("ai_insight_clicked", { employer: r.employer });
     try {
       const res = await axios.post(`${API}/insight`, {
         employer: r.employer, role: r.role, city: r.city,
@@ -171,6 +173,7 @@ export default function Home() {
   async function handleSearch() {
     if (!query.trim()) return;
     setSearching(true);
+    posthog.capture("search", { query: query, state: state });
     try {
       const res = await axios.post(`${API}/search`, { query, state: state || null, limit: 20 });
       setSearchResults(res.data.results);
@@ -182,6 +185,7 @@ export default function Home() {
   async function handleMatch() {
     if (!file) return;
     setMatching(true);
+    posthog.capture("resume_match");
     try {
       const form = new FormData();
       form.append("file", file);
