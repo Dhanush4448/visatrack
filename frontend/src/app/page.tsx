@@ -167,37 +167,44 @@ export default function Home() {
   const [state, setState] = useState("");
   const [searchResults, setSearchResults] = useState<Result[]>([]);
   const [searching, setSearching] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentQuery, setCurrentQuery] = useState("");
+  const [currentState, setCurrentState] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [matchResults, setMatchResults] = useState<Result[]>([]);
   const [matching, setMatching] = useState(false);
   const [preview, setPreview] = useState("");
 
   async function handleSearch() {
-    if (!query.trim()) return;
-    setSearching(true);
-    posthog.capture("search", { query: query, state: state });
-    try {
-      const res = await axios.post(`${API}/search`, { query, state: state || null, limit: 20 });
-      setSearchResults(res.data.results);
-    } finally {
-      setSearching(false);
-    }
+  if (!query.trim()) return;
+  setSearching(true);
+  setCurrentQuery(query);
+  setCurrentState(state);
+  posthog.capture("search", { query: query, state: state });
+  try {
+    const res = await axios.post(`${API}/search`, { query, state: state || null, limit: 20 });
+    setSearchResults(res.data.results);
+    setHasMore(res.data.results.length === 20);
+  } finally {
+    setSearching(false);
   }
+}
 
-  async function handleMatch() {
-    if (!file) return;
-    setMatching(true);
-    posthog.capture("resume_match");
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await axios.post(`${API}/match`, form);
-      setMatchResults(res.data.matches);
-      setPreview(res.data.text_preview);
-    } finally {
-      setMatching(false);
-    }
+async function handleLoadMore() {
+  setSearching(true);
+  try {
+    const res = await axios.post(`${API}/search`, {
+      query: currentQuery,
+      state: currentState || null,
+      limit: 20,
+      offset: searchResults.length,
+    });
+    setSearchResults(prev => [...prev, ...res.data.results]);
+    setHasMore(res.data.results.length === 20);
+  } finally {
+    setSearching(false);
   }
+}
 
   const states = ["CA", "NY", "TX", "WA", "MA", "IL", "GA", "VA", "NJ", "FL", "NC", "OH", "PA", "CO", "AZ"];
 
@@ -387,9 +394,32 @@ export default function Home() {
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {searchResults.map((r, i) => <ResultCard key={i} r={r} />)}
-            </div>
-          </div>
+  {searchResults.map((r, i) => <ResultCard key={i} r={r} />)}
+</div>
+
+{hasMore && (
+  <div style={{ textAlign: "center", marginTop: "24px" }}>
+    <button
+      onClick={handleLoadMore}
+      disabled={searching}
+      style={{
+        padding: "12px 32px",
+        background: "rgba(99,102,241,0.15)",
+        border: "1px solid rgba(99,102,241,0.3)",
+        borderRadius: "10px",
+        color: "#818CF8",
+        fontSize: "14px",
+        fontWeight: 600,
+        cursor: searching ? "wait" : "pointer",
+        transition: "all 0.2s",
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = "rgba(99,102,241,0.25)")}
+      onMouseLeave={e => (e.currentTarget.style.background = "rgba(99,102,241,0.15)")}
+    >
+      {searching ? "Loading..." : "Load More Results"}
+    </button>
+  </div>
+)}
         )}
 
         {/* Match Tab */}

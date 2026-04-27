@@ -30,11 +30,12 @@ class SearchRequest(BaseModel):
     state: str | None = None
     min_wage: float | None = None
     limit: int = 20
+    offset: int = 0
 
 @router.post("/search")
 async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
     query_vec = str(get_embedding(req.query))
-    params = {"vec": query_vec, "limit": req.limit}
+    params = {"vec": query_vec, "limit": req.limit, "offset": req.offset}
     state_filter = ""
     wage_filter = ""
     if req.state:
@@ -56,7 +57,7 @@ async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
         {wage_filter}
         GROUP BY employer_name, soc_title, worksite_city, worksite_state
         ORDER BY similarity DESC
-        LIMIT :limit
+        LIMIT :limit OFFSET :offset
     """), params).fetchall()
     return {
         "query": req.query,
