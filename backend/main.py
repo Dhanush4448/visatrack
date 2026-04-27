@@ -5,6 +5,8 @@ from routers import search
 from routers import match
 from routers import groq_insights
 from routers import auth
+from routers import employers
+
 
 app = FastAPI(title="VisaTrack API", version="0.1.0")
 
@@ -28,3 +30,4 @@ app.include_router(search.router)
 app.include_router(match.router)
 app.include_router(groq_insights.router)
 app.include_router(auth.router)
+app.include_router(employers.router)

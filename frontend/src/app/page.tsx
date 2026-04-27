@@ -95,9 +95,11 @@ function ResultCard({ r }: { r: Result }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#F1F5F9", lineHeight: 1.3 }}>
-                {r.employer}
-              </h3>
+              <a href={`/employer/${encodeURIComponent(r.employer)}`} style={{ textDecoration: "none" }}>
+  <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#818CF8", lineHeight: 1.3, cursor: "pointer" }}>
+    {r.employer}
+  </h3>
+</a>
               <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748B" }}>
                 {r.role} · {r.city}, {r.state}
               </p>
