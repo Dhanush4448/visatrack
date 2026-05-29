@@ -1,4 +1,4 @@
-﻿"use client";
+content = '''"use client";
 import { useState } from "react";
 import axios from "axios";
 import posthog from "posthog-js";
@@ -89,7 +89,7 @@ export default function Home() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", padding: "5px 12px", borderRadius: "20px" }}>
             <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10B981" }} />
-            <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 600 }}>403,378 RECORDSisatrack-backend.onrender.com</span>
+            <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 600 }}>106,326 RECORDS</span>
           </div>
         </div>
       </header>
@@ -99,7 +99,7 @@ export default function Home() {
           <h1 style={{ fontSize: "42px", fontWeight: 800, margin: "0 0 12px", letterSpacing: "-0.03em", background: "linear-gradient(135deg, #F1F5F9 30%, #94A3B8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             Find Your H1B Sponsor
           </h1>
-          <p style={{ fontSize: "16px", color: "#475569", margin: "0 0 6px" }}>Semantic search across 400,000+ real DOL filings.</p>
+          <p style={{ fontSize: "16px", color: "#475569", margin: "0 0 6px" }}>Semantic search across 106,000+ real DOL filings.</p>
           <p style={{ fontSize: "12px", color: "#334155" }}>First search may take ~30s while server wakes up</p>
         </div>
 
@@ -203,3 +203,8 @@ export default function Home() {
     </main>
   );
 }
+'''
+
+with open('frontend/src/app/page.tsx', 'w', encoding='utf-8') as f:
+    f.write(content)
+print('Done!')
