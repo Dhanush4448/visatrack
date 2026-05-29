@@ -3,15 +3,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from pydantic import BaseModel
 from db import get_db
-from functools import lru_cache
 from dotenv import load_dotenv
 import httpx
 import os
-
 load_dotenv()
 
 router = APIRouter(prefix="/api")
-
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_MODEL = "BAAI/bge-small-en-v1.5"
 HF_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
@@ -29,6 +26,7 @@ class SearchRequest(BaseModel):
     query: str
     state: str | None = None
     min_wage: float | None = None
+    fiscal_year: int | None = None
     limit: int = 20
     offset: int = 0
 
@@ -36,14 +34,23 @@ class SearchRequest(BaseModel):
 async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
     query_vec = str(get_embedding(req.query))
     params = {"vec": query_vec, "limit": req.limit, "offset": req.offset}
+
     state_filter = ""
     wage_filter = ""
+    year_filter = ""
+
     if req.state:
         state_filter = "AND UPPER(worksite_state) = :state"
         params["state"] = req.state.upper()
+
     if req.min_wage:
         wage_filter = "AND wage_rate >= :min_wage"
         params["min_wage"] = req.min_wage
+
+    if req.fiscal_year:
+        year_filter = "AND fiscal_year = :fiscal_year"
+        params["fiscal_year"] = req.fiscal_year
+
     rows = db.execute(text(f"""
         SELECT
             employer_name, soc_title, worksite_city, worksite_state,
@@ -55,10 +62,12 @@ async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
         WHERE LOWER(case_status) = 'certified'
         {state_filter}
         {wage_filter}
+        {year_filter}
         GROUP BY employer_name, soc_title, worksite_city, worksite_state
         ORDER BY similarity DESC
         LIMIT :limit OFFSET :offset
     """), params).fetchall()
+
     return {
         "query": req.query,
         "total": len(rows),
