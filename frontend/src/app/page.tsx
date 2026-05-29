@@ -89,7 +89,7 @@ export default function Home() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", padding: "5px 12px", borderRadius: "20px" }}>
             <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10B981" }} />
-            <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 600 }}>403,378 RECORDSisatrack-backend.onrender.com</span>
+            <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 600 }}>403,378 RECORDS</span>
           </div>
         </div>
       </header>
