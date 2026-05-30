@@ -57,15 +57,14 @@ async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
             COUNT(*) AS filing_count,
             AVG(wage_rate) AS avg_wage,
             MAX(fiscal_year) AS latest_year,
-            AVG(1 - (embedding <=> CAST(:vec AS vector))) AS similarity
+            MIN(embedding <=> CAST(:vec AS vector)) AS min_distance
         FROM lca_records
         WHERE LOWER(case_status) = 'certified'
         {state_filter}
         {wage_filter}
         {year_filter}
         GROUP BY employer_name, soc_title, worksite_city, worksite_state
-        HAVING AVG(1 - (embedding <=> CAST(:vec AS vector))) > 0.3
-        ORDER BY similarity DESC
+        ORDER BY min_distance ASC
         LIMIT :limit OFFSET :offset
     """), params).fetchall()
 
@@ -81,7 +80,7 @@ async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
                 "filings": int(r.filing_count),
                 "avg_wage": round(float(r.avg_wage)) if r.avg_wage else None,
                 "latest_year": r.latest_year,
-                "match_score": round(float(r.similarity), 3),
+                "match_score": round(1 - float(r.min_distance), 3),
             }
             for r in rows
         ],
