@@ -64,6 +64,7 @@ async def search_sponsors(req: SearchRequest, db: Session = Depends(get_db)):
         {wage_filter}
         {year_filter}
         GROUP BY employer_name, soc_title, worksite_city, worksite_state
+        HAVING AVG(1 - (embedding <=> CAST(:vec AS vector))) > 0.3
         ORDER BY similarity DESC
         LIMIT :limit OFFSET :offset
     """), params).fetchall()
